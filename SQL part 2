@@ -1,1 +1,36 @@
 
+CREATE NEW TABLE for DVs at Cid level
+
+-- Step 1: Create a new table to store the independent variables for each CID
+
+CREATE TABLE assay_dv_cid (
+    cid VARCHAR(50),
+    ab_error INTEGER DEFAULT 0,
+    ov_error INTEGER DEFAULT 0,
+    total_error INTEGER DEFAULT 0
+);
+
+-- Step 2: Insert data into cid_errors with calculated ab_error, ov_error, and total_error
+
+INSERT INTO assay_dv_cid (cid, ab_error, ov_error, total_error)
+SELECT 
+    cid,
+    COUNT(CASE WHEN status LIKE 'in site%' THEN 1 END) AS ab_error,
+    COUNT(CASE WHEN status LIKE 'in ats%' THEN 1 END) AS ov_error,
+    COUNT(CASE WHEN status LIKE 'in site%' THEN 1 END) + COUNT(CASE WHEN status LIKE 'in ats%' THEN 1 END) AS total_error
+FROM assay_analysis
+GROUP BY cid;
+
+
+
+-- COMBINE DV WITH IV TABLE
+
+SELECT d.cid, i.mkt_id, i.county, i.eid_tenure, i.mkt_ave_tenure, i.mkt_ave_cidthq, i.mkt_ave_cidtocid, i.eid_ave_cidtocid, i.sweath_fct, d.ab_error, d.ov_error, d.total_error
+FROM
+assay_dv_cid AS d
+LEFT JOIN 
+var_analysis AS i
+ON d.cid = i.cid;
+
+
+
