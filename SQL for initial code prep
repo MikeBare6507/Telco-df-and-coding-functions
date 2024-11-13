@@ -1,0 +1,92 @@
+VARIOUS SQL FUNCTIONS TO BEGIN WORKING INVENTORY TABLE INTO DATAFRAME
+
+FULL OUTER JOIN (UNION) QUERY NEEDED FOR FINDING DISCREPANCIES BETWEEN the theoretical database inventory and the "universe" inventory (actual accurate inventory of sites) that is sampled in for the simulation
+
+SELECT 
+    a.cid AS simbase_cid, 
+    a.part_no AS simbase_part_no, 
+    a.asset_id AS simbase_asset_id, 
+    u.cid AS test_cid, 
+    u.part_no AS test_part_no, 
+    u.asset_id AS test_asset_id
+FROM 
+    simbase_cid_inv AS a
+FULL OUTER JOIN 
+    test_ats_output2 AS u
+ON 
+    a.asset_id = u.asset_id;
+
+  --SECOND VERSION TO VIEW NULL VALUES IN BOTH TABLES (thus indicating discrepancies)
+
+SELECT 
+    a.cid AS simbase_cid, 
+    a.part_no AS simbase_part_no, 
+    a.asset_id AS simbase_asset_id, 
+    u.cid AS test_cid, 
+    u.part_no AS test_part_no, 
+    u.asset_id AS test_asset_id
+FROM 
+    simbase_cid_inv AS a
+FULL OUTER JOIN 
+    test_ats_output2 AS u
+ON 
+    a.asset_id = u.asset_id
+WHERE 
+    a.asset_id IS NULL OR u.asset_id IS NULL;
+
+
+--FIRST STEP TO COMBINING TABLES -- creates some of the dependent variables
+
+Step 1:
+-- Alter table to add the new "status" column
+
+ALTER TABLE assay_results1
+ADD COLUMN status VARCHAR(50);
+
+STep 2:
+-- Update the "status" column based on the specified conditions
+UPDATE assay_results1
+SET status = CASE
+    WHEN ats_cid IS NULL THEN 'in site/not in ats'
+    WHEN real_cid IS NULL THEN 'in ats/not in site'
+    WHEN ats_cid IS NOT NULL AND real_cid IS NOT NULL THEN 'accurate'
+    ELSE NULL
+END;
+
+-- Step 3: Create the new table "assay_analysis"
+CREATE TABLE assay_analysis (
+    cid VARCHAR(50),
+    part_no VARCHAR(50),
+    asset_id VARCHAR(50),
+    status VARCHAR(50)
+);
+
+
+DUPLICATES --
+--Need to find duplicate asset_id's for cases simulating the movement of an asset from one location to another. Such instances result in there being duplicate asset_id's. Once those have been identified, there additionall needs to be an EXIST query for next-phase processesing
+
+SELECT asset_id, COUNT(*) AS count
+FROM assay_analysis1
+GROUP BY asset_id
+HAVING COUNT(*) > 1;
+
+
+
+-- Step 2: Insert data into "assay_analysis" based on conditions in "assay_results"
+INSERT INTO assay_analysis (cid, part_no, asset_id, status)
+SELECT 
+    CASE 
+        WHEN status = 'accurate' OR status = 'in ats/not in site' THEN ats_cid
+        ELSE real_cid
+    END AS cid,
+    CASE 
+        WHEN status = 'accurate' OR status = 'in ats/not in site' THEN ats_part_no
+        ELSE real_part_no
+    END AS part_no,
+    CASE 
+        WHEN status = 'accurate' OR status = 'in ats/not in site' THEN ats_asset_id
+        ELSE real_asset_id
+    END AS asset_id,
+    status
+FROM assay_results
+WHERE status IN ('accurate', 'in ats/not in site', 'in site/not in ats');
