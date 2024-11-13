@@ -53,14 +53,35 @@ SET status = CASE
     ELSE NULL
 END;
 
+
+CREATE NEW TABLE THAT REMOVES NULL VALUES FROM UNION QUERY BY COMBINING VALUES INTO COLUMNS
 -- Step 3: Create the new table "assay_analysis"
 CREATE TABLE assay_analysis (
-    cid VARCHAR(50),
+    cid VARCHAR(7),
     part_no VARCHAR(50),
-    asset_id VARCHAR(50),
+    asset_id VARCHAR(14),
     status VARCHAR(50)
 );
 
+
+
+-- Step 2: Insert data into "assay_analysis" based on conditions in "assay_results"
+INSERT INTO assay_analysis (cid, part_no, asset_id, status)
+SELECT 
+    CASE 
+        WHEN status IN ('accurate', 'in ats/not in site') THEN simbase_cid
+        WHEN status = 'in site/not in ats' THEN test_cid
+    END AS cid,
+    CASE 
+        WHEN status IN ('accurate', 'in ats/not in site') THEN simbase_part_no
+        WHEN status = 'in site/not in ats' THEN test_part_no
+    END AS part_no,
+    CASE 
+        WHEN status IN ('accurate', 'in ats/not in site') THEN simbase_asset_id
+        WHEN status = 'in site/not in ats' THEN test_asset_id
+    END AS asset_id,
+    status
+FROM assay_results1;
 
 DUPLICATES --
 --Need to find duplicate asset_id's for cases simulating the movement of an asset from one location to another. Such instances result in there being duplicate asset_id's. Once those have been identified, there additionall needs to be an EXIST query for next-phase processesing
@@ -69,24 +90,3 @@ SELECT asset_id, COUNT(*) AS count
 FROM assay_analysis1
 GROUP BY asset_id
 HAVING COUNT(*) > 1;
-
-
-
--- Step 2: Insert data into "assay_analysis" based on conditions in "assay_results"
-INSERT INTO assay_analysis (cid, part_no, asset_id, status)
-SELECT 
-    CASE 
-        WHEN status = 'accurate' OR status = 'in ats/not in site' THEN ats_cid
-        ELSE real_cid
-    END AS cid,
-    CASE 
-        WHEN status = 'accurate' OR status = 'in ats/not in site' THEN ats_part_no
-        ELSE real_part_no
-    END AS part_no,
-    CASE 
-        WHEN status = 'accurate' OR status = 'in ats/not in site' THEN ats_asset_id
-        ELSE real_asset_id
-    END AS asset_id,
-    status
-FROM assay_results
-WHERE status IN ('accurate', 'in ats/not in site', 'in site/not in ats');
