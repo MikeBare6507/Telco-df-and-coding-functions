@@ -6,7 +6,7 @@ CREATE NEW TABLE for DVs at Cid level
 -- Step 1: Create a new table to store the independent variables for each CID
 
 CREATE TABLE assay_dv_cid (
-    cid VARCHAR(50),
+    cid VARCHAR(7),
     ab_error INTEGER DEFAULT 0,
     ov_error INTEGER DEFAULT 0,
     total_error INTEGER DEFAULT 0
