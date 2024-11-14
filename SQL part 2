@@ -24,7 +24,6 @@ FROM assay_analysis
 GROUP BY cid;
 
 
-
 -- COMBINE DV WITH IV TABLE
 
 SELECT d.cid, i.mkt_id, i.county, i.eid_tenure, i.mkt_ave_tenure, i.mkt_ave_cidthq, i.mkt_ave_cidtocid, i.eid_ave_cidtocid, i.sweath_fct, d.ab_error, d.ov_error, d.total_error
@@ -34,5 +33,13 @@ LEFT JOIN
 var_analysis AS i
 ON d.cid = i.cid;
 
+--Step 3: Creat analysis_model table to use as df
 
+CREATE TABLE analysis_model AS SELECT d.cid, i.mkt_id, i.county, i.eid_tenure, i.mkt_ave_tenure, i.mkt_ave_cidthq, i.mkt_ave_cidtocid, i.eid_ave_cidtocid, i.sweath_fct, d.ab_error, d.ov_error, d.total_error
+FROM
+assay_dv_cid AS d
+LEFT JOIN 
+var_analysis AS i
+ON d.cid = i.cid;
 
+-- Don't forget to go to analysis_model table and make cid Primary key.
