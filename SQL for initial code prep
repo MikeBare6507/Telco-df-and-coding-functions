@@ -35,6 +35,23 @@ WHERE
     a.asset_id IS NULL OR u.asset_id IS NULL;
 
 
+TURN FULL OUTER JOIN TO NEW TABLE
+
+CREATE TABLE assay_results1 AS SELECT 
+    a.cid AS simbase_cid, 
+    a.part_no AS simbase_part_no, 
+    a.asset_id AS simbase_asset_id, 
+    u.cid AS test_cid, 
+    u.part_no AS test_part_no, 
+    u.asset_id AS test_asset_id
+FROM 
+    simbase_cid_inv AS a
+FULL OUTER JOIN 
+    test_ats_output2 AS u
+ON 
+    a.asset_id = u.asset_id;
+
+
 --FIRST STEP TO COMBINING TABLES -- creates some of the dependent variables
 
 Step 1:
@@ -47,9 +64,9 @@ STep 2:
 -- Update the "status" column based on the specified conditions
 UPDATE assay_results1
 SET status = CASE
-    WHEN ats_cid IS NULL THEN 'in site/not in ats'
-    WHEN real_cid IS NULL THEN 'in ats/not in site'
-    WHEN ats_cid IS NOT NULL AND real_cid IS NOT NULL THEN 'accurate'
+    WHEN simbase_cid IS NULL THEN 'in site/not in ats'
+    WHEN test_cid IS NULL THEN 'in ats/not in site'
+    WHEN simbase_cid IS NOT NULL AND test_cid IS NOT NULL THEN 'accurate'
     ELSE NULL
 END;
 
@@ -87,6 +104,6 @@ DUPLICATES --
 --Need to find duplicate asset_id's for cases simulating the movement of an asset from one location to another. Such instances result in there being duplicate asset_id's. Once those have been identified, there additionall needs to be an EXIST query for next-phase processesing
 
 SELECT asset_id, COUNT(*) AS count
-FROM assay_analysis1
+FROM assay_analysis
 GROUP BY asset_id
 HAVING COUNT(*) > 1;
