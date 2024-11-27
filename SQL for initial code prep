@@ -1,6 +1,13 @@
-VARIOUS SQL FUNCTIONS TO BEGIN WORKING INVENTORY TABLE INTO DATAFRAME
+--STAGE ONE: SQL FUNCTIONS TO WORKING UNIVERSE INVENTORY INTO DATAFRAME
 
-FULL OUTER JOIN (UNION) QUERY NEEDED FOR FINDING DISCREPANCIES BETWEEN the theoretical database inventory and the "universe" inventory (actual accurate inventory of sites) that is sampled in for the simulation
+--relevant tables:
+        --ats_cid_inv (existing)   --inv_output_uverse (existing)
+            --assay_results (new: transitional)  --assay_analysis (new: transitional)
+
+--A. Step 1: FULL OUTER JOIN (UNION) to bring ats and inventory together
+    -- Can do IS NULL queries to ensure the invMess functins worked properly -- both tables should show nulls
+    -- If want to stop and do NULL queries, add the following to bottom of UNION query:
+        --WHERE a.asset_id IS NULL OR u.asset_id IS NULL;
 
 SELECT 
     a.cid AS ats_cid, 
@@ -16,26 +23,7 @@ FULL OUTER JOIN
 ON 
     a.asset_id = u.asset_id;
 
-  --SECOND VERSION TO VIEW NULL VALUES IN BOTH TABLES (thus indicating discrepancies)
-
-SELECT 
-    a.cid AS simbase_cid, 
-    a.part_no AS simbase_part_no, 
-    a.asset_id AS simbase_asset_id, 
-    u.cid AS test_cid, 
-    u.part_no AS test_part_no, 
-    u.asset_id AS test_asset_id
-FROM 
-    simbase_cid_inv AS a
-FULL OUTER JOIN 
-    test_ats_output2 AS u
-ON 
-    a.asset_id = u.asset_id
-WHERE 
-    a.asset_id IS NULL OR u.asset_id IS NULL;
-
-
-TURN FULL OUTER JOIN TO NEW TABLE
+--Make FOJ into new table
 
 CREATE TABLE assay_results AS SELECT 
     a.cid AS ats_cid, 
@@ -52,16 +40,17 @@ ON
     a.asset_id = u.asset_id;
 
 
---FIRST STEP TO COMBINING TABLES -- creates some of the dependent variables
+--B. Step 2: Convert to single table with tuples
 
---Step 1:
+    --a. Add status column to table
+
 -- Alter table to add the new "status" column
 
 ALTER TABLE assay_results
 ADD COLUMN status VARCHAR(50);
 
---STep 2:
--- Update the "status" column based on the specified conditions
+    --b. update new status field per cases
+
 UPDATE assay_results
 SET status = CASE
     WHEN ats_cid IS NULL THEN 'in site/not in ats'
@@ -70,9 +59,8 @@ SET status = CASE
     ELSE NULL
 END;
 
+    --c. New assay_analysis table combining values into status field
 
---CREATE NEW TABLE THAT REMOVES NULL VALUES FROM UNION QUERY BY COMBINING VALUES INTO COLUMNS
--- Step 3: Create the new table "assay_analysis"
 CREATE TABLE assay_analysis (
     cid VARCHAR(7),
     part_no VARCHAR(50),
@@ -80,9 +68,8 @@ CREATE TABLE assay_analysis (
     status VARCHAR(50)
 );
 
+    --d. Insert data into new assay_analysis table based on values from assay_results table
 
-
--- Step 4: Insert data into "assay_analysis" based on conditions in "assay_results"
 INSERT INTO assay_analysis (cid, part_no, asset_id, status)
 SELECT 
     CASE 
@@ -100,10 +87,7 @@ SELECT
     status
 FROM assay_results;
 
---Step 5: check for duplicate records in assset_id -- indicating asset move --
---Need to find duplicate asset_id's for cases simulating the movement of an asset from one location to another. Such instances result in there being duplicate asset_id's. Once those have been identified, there additionall needs to be an EXIST query for next-phase processesing
+--e. OPTIONAL STEP: check for duplicate records in asset_id to check for success of asset_move function
+    -- copy and paste following SQL if want to check:
 
-SELECT asset_id, COUNT(*) AS count
-FROM assay_analysis
-GROUP BY asset_id
-HAVING COUNT(*) > 1;
+--SELECT asset_id, COUNT(*) AS count FROM assay_analysis GROUP BY asset_id HAVING COUNT(*) > 1;
