@@ -1,7 +1,7 @@
 note: so far this is based on universe not sample
 
 
-CREATE NEW TABLE for DVs at Cid level
+--CREATE NEW TABLE for DVs at Cid level
 
 -- Step 1: Create a new table to store the independent variables for each CID
 
@@ -26,7 +26,7 @@ GROUP BY cid;
 
 -- COMBINE DV WITH IV TABLE
 
-SELECT d.cid, i.mkt_id, i.county, i.eid_tenure, i.mkt_ave_tenure, i.mkt_ave_cidthq, i.mkt_ave_cidtocid, i.eid_ave_cidtocid, i.sweath_fct, d.ab_error, d.ov_error, d.total_error
+SELECT d.cid, i.mkt_id, i.eid_tenure, i.mkt_ave_tenure, i.mkt_ave_cidtocid, i.eid_ave_cidtocid, i.sweath_fct, d.ab_error, d.ov_error, d.total_error
 FROM
 assay_dv_cid AS d
 LEFT JOIN 
@@ -35,7 +35,7 @@ ON d.cid = i.cid;
 
 --Step 3: Creat analysis_model table to use as df
 
-CREATE TABLE analysis_model AS SELECT d.cid, i.mkt_id, i.county, i.eid_tenure, i.mkt_ave_tenure, i.mkt_ave_cidthq, i.mkt_ave_cidtocid, i.eid_ave_cidtocid, i.sweath_fct, d.ab_error, d.ov_error, d.total_error
+CREATE TABLE analysis_model AS SELECT d.cid, i.mkt_id, i.eid_tenure, i.mkt_ave_tenure, i.mkt_ave_cidtocid, i.eid_ave_cidtocid, i.sweath_fct, d.ab_error, d.ov_error, d.total_error
 FROM
 assay_dv_cid AS d
 LEFT JOIN 
