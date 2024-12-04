@@ -129,7 +129,7 @@ ON d.cid = i.cid;
 
 --Step 3: Creat analysis_model table (and merge with cid asset_id qty) to use as df
 
-CREATE TABLE analysis_modelTest AS SELECT 
+CREATE TABLE analysis_df AS SELECT 
     d.cid, 
     i.mkt_id, 
     i.eid_tenure, 
