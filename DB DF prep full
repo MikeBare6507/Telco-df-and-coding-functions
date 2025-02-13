@@ -4,6 +4,14 @@
         --ats_cid_inv (existing)   --inv_output_uverse (existing)
             --assay_results (new: transitional)  --assay_analysis (new: transitional)
 
+--Prelim step: take simulation results and convert to sample results
+
+CREATE TABLE ats_cid_inv AS SELECT*
+FROM inv_output_ats_sim AS a
+RIGHT JOIN
+sample_cids AS s
+ON a.cid = s.cid;
+
 --A. Step 1: FULL OUTER JOIN (UNION) to bring ats and inventory together
     -- Can do IS NULL queries to ensure the invMess functins worked properly -- both tables should show nulls
     -- If want to stop and do NULL queries, add the following to bottom of UNION query:
@@ -19,7 +27,7 @@ SELECT
 FROM 
     ats_cid_inv AS a
 FULL OUTER JOIN 
-    inv_output_uverse AS u
+    inv_output_ats_sim_master AS u
 ON 
     a.asset_id = u.asset_id;
 
