@@ -132,7 +132,7 @@ SELECT d.cid, i.mkt_id, i.eid_tenure, i.mkt_ave_tenure, i.mkt_ave_cidtocid, i.sw
 FROM
 assay_dv_cid AS d
 LEFT JOIN 
-var_analysis AS i
+simulation_matrix AS i
 ON d.cid = i.cid;
 
 --Step 3: Creat analysis_model table (and merge with cid asset_id qty) to use as df
@@ -142,8 +142,8 @@ SELECT
     d.cid, 
     i.mkt_id, 
     i.eid_tenure, 
-    i.mkt_ave_tenure, 
-    i.mkt_ave_cidtocid, 
+    i.eid_dist, 
+    i.eid_diligence, 
     i.sweath_fct, 
     COALESCE(q.asset_qty, 0) AS asset_qty, 
     d.ab_error, 
