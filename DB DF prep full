@@ -135,7 +135,7 @@ LEFT JOIN
 simulation_matrix AS i
 ON d.cid = i.cid;
 
---Step 3: Creat analysis_model table (and merge with cid asset_id qty) to use as df
+
 
 CREATE TABLE analysis_df AS 
 SELECT 
@@ -157,7 +157,7 @@ SELECT
 FROM 
     assay_dv_cid AS d
 LEFT JOIN 
-    var_analysis AS i
+    simulation_matrix AS i
 ON 
     d.cid = i.cid
 LEFT JOIN 
@@ -166,14 +166,11 @@ LEFT JOIN
             cid, 
             COUNT(asset_id) AS asset_qty
         FROM 
-            inv_output_uverse
+            inv_output_ats_sim
         GROUP BY 
             cid
     ) AS q
 ON 
     d.cid = q.cid;
-
--- Don't forget to go to analysis_model table and make cid Primary key.
-
 
 
