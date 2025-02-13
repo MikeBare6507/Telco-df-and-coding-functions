@@ -43,7 +43,7 @@ CREATE TABLE assay_results AS SELECT
 FROM 
     ats_cid_inv AS a
 FULL OUTER JOIN 
-    inv_output_uverse AS u
+    inv_output_ats_sim_master AS u
 ON 
     a.asset_id = u.asset_id;
 
