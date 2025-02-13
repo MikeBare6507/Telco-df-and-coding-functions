@@ -6,7 +6,7 @@
 
 --Prelim step: take simulation results and convert to sample results
 
-CREATE TABLE ats_cid_inv AS SELECT*
+CREATE TABLE ats_cid_inv AS SELECT a.cid, a.part_no, a.asset_id
 FROM inv_output_ats_sim AS a
 RIGHT JOIN
 sample_cids AS s
