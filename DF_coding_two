@@ -1,0 +1,92 @@
+-- Step 1: Create the intermediate result table with ATS and Universe inventory
+CREATE TABLE res_sim_inv AS 
+SELECT 
+    a.cid AS ats_cid, 
+    a.part_no AS ats_part_no, 
+    a.asset_id AS ats_asset_id, 
+    u.cid AS inv_cid, 
+    u.part_no AS inv_part_no, 
+    u.asset_id AS inv_asset_id
+FROM 
+    inv_output_ats_sim AS a
+FULL OUTER JOIN 
+    universe_inventory AS u
+ON 
+    a.asset_id = u.asset_id;
+
+-- Step 2: Add status column and update it based on conditions
+ALTER TABLE res_sim_inv
+ADD COLUMN status VARCHAR(50);
+
+UPDATE res_sim_inv
+SET status = CASE
+    WHEN ats_cid IS NULL THEN 'in site/not in ats'
+    WHEN inv_cid IS NULL THEN 'in ats/not in site'
+    WHEN ats_cid IS NOT NULL AND inv_cid IS NOT NULL THEN 'accurate'
+    ELSE NULL
+END;
+
+-- Step 3: Create final analysis table and insert transformed data
+CREATE TABLE analysis_df AS 
+SELECT 
+    COALESCE(ats_cid, inv_cid) AS cid,
+    COALESCE(ats_part_no, inv_part_no) AS part_no,
+    COALESCE(ats_asset_id, inv_asset_id) AS asset_id,
+    status
+FROM res_sim_inv;
+
+-- Step 4: Create the dependent variable (DV) table
+CREATE TABLE dv_inv AS
+SELECT 
+    cid,
+    COUNT(CASE WHEN status LIKE 'in site%' THEN 1 END) AS ab_error,
+    COUNT(CASE WHEN status LIKE 'in ats%' THEN 1 END) AS ov_error,
+    COUNT(CASE WHEN status LIKE 'in site%' THEN 1 END) + COUNT(CASE WHEN status LIKE 'in ats%' THEN 1 END) AS total_error
+FROM analysis_df
+GROUP BY cid;
+
+-- Step 5: Merge DV table with independent variables from simulation_matrix
+CREATE TABLE analysis_df_2 AS 
+SELECT 
+    d.cid, 
+    i.mkt_id, 
+    i.cid_age,
+    i.pmanu,
+    i.eid_tenure, 
+    i.eid_dist, 
+    i.sweath_fct, 
+    COALESCE(i.asset_cnt, 0) AS asset_qty, 
+    d.ab_error, 
+    d.ov_error, 
+    d.total_error, 
+    CASE 
+        WHEN COALESCE(i.asset_cnt, 0) = 0 THEN 0  -- Avoid division by zero, set accuracy to 0% if no assets
+        WHEN COALESCE(d.total_error, 0) = 0 THEN 100 -- No errors mean 100% accuracy
+        ELSE (1 - CAST(COALESCE(d.total_error, 0) AS NUMERIC) / CAST(COALESCE(i.asset_cnt, 0) AS NUMERIC)) * 100 
+    END AS acc_fct
+FROM 
+    dv_inv AS d
+LEFT JOIN 
+    simulation_matrix AS i
+ON 
+    d.cid = i.cid;
+
+-- Step 6: Create the final sample table for analysis
+CREATE TABLE analysis_df_sample AS 
+SELECT 
+    a.cid, 
+    a.mkt_id, 
+    a.cid_age, 
+    a.pmanu, 
+    a.eid_tenure, 
+    a.eid_dist, 
+    a.sweath_fct, 
+    a.asset_qty, 
+    a.ab_error, 
+    a.ov_error, 
+    a.total_error, 
+    a.acc_fct
+FROM analysis_df_2 AS a
+RIGHT JOIN 
+    sample_cids AS s
+ON a.cid = s.cid;
